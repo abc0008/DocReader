@@ -118,29 +118,38 @@ def extract_key_fields(text):
         return None
 
 @app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
+def upload_files():
+    if 'files' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
-        # Extract text from PDF
-        extracted_text = extract_text_from_pdf(filepath)
-        
-        # Extract entities using Claude API
-        entities = extract_key_fields(extracted_text)
-        
-        return jsonify({
-            'message': 'File uploaded successfully',
-            'extracted_text': extracted_text,
-            'entities': entities
-        }), 200
-    return jsonify({'error': 'File type not allowed'}), 400
+    
+    files = request.files.getlist('files')
+    
+    if not files or files[0].filename == '':
+        return jsonify({'error': 'No selected files'}), 400
+    
+    results = []
+    
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            
+            # Extract text from PDF
+            extracted_text = extract_text_from_pdf(filepath)
+            
+            # Extract entities using Claude API
+            entities = extract_key_fields(extracted_text)
+            
+            results.append({
+                'filename': filename,
+                'extracted_text': extracted_text,
+                'entities': entities
+            })
+        else:
+            return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
+    
+    return jsonify(results), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
