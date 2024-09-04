@@ -1,19 +1,24 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import os
 from werkzeug.utils import secure_filename
 import pdfplumber
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
 from dotenv import load_dotenv
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Get the current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Get the parent directory
-parent_dir = os.path.dirname(current_dir)
-# Construct the path to the .env file in the parent directory
-dotenv_path = os.path.join(parent_dir, '.env')
+# Set the UPLOAD_FOLDER
+UPLOAD_FOLDER = os.path.join(current_dir, 'uploads')
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 # Load environment variables from the .env file in the parent directory
+dotenv_path = os.path.join(os.path.dirname(current_dir), '.env')
 load_dotenv(dotenv_path)
 
 # Initialize Anthropic client with API key from environment variable
@@ -23,13 +28,12 @@ if not anthropic_api_key:
 
 client = Anthropic(api_key=anthropic_api_key)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../frontend/build')
 CORS(app)
 
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'pdf'}
-
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'pdf'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -117,14 +121,50 @@ def extract_key_fields(text):
         print(f"Error calling Anthropic API: {str(e)}")
         return None
 
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+@app.route('/test')
+def test_route():
+    return "Backend is working!"
+
+@app.route('/test-pdf')
+def test_pdf():
+    files = os.listdir(UPLOAD_FOLDER)
+    logging.debug(f"Files in upload folder: {files}")
+    if files:
+        test_file = files[0]
+        return send_from_directory(UPLOAD_FOLDER, test_file, mimetype='application/pdf')
+    else:
+        return "No PDF files found in the upload folder", 404
+
+@app.route('/list-uploads')
+def list_uploads():
+    files = os.listdir(UPLOAD_FOLDER)
+    return jsonify(files)
+
+@app.route('/uploads/<path:filename>')
+def serve_upload(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/uploads/<filename>')
+def serve_uploaded_pdf(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype='application/pdf')
+
 @app.route('/upload', methods=['POST'])
 def upload_files():
+    app.logger.info("Received upload request")
+    app.logger.debug(f"Request files: {request.files}")
+    app.logger.debug(f"Request form: {request.form}")
+    
     if 'files' not in request.files:
+        app.logger.error("No file part in the request")
         return jsonify({'error': 'No file part'}), 400
     
     files = request.files.getlist('files')
     
     if not files or files[0].filename == '':
+        app.logger.error("No selected files")
         return jsonify({'error': 'No selected files'}), 400
     
     results = []
@@ -134,6 +174,7 @@ def upload_files():
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
+            app.logger.info(f"File saved: {filepath}")
             
             # Extract text from PDF
             extracted_text = extract_text_from_pdf(filepath)
@@ -144,12 +185,46 @@ def upload_files():
             results.append({
                 'filename': filename,
                 'extracted_text': extracted_text,
-                'entities': entities
+                'entities': entities,
+                'pdfUrl': f'/uploads/{filename}'
             })
         else:
+            app.logger.error(f"File type not allowed: {file.filename}")
             return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
     
+    app.logger.info(f"Upload successful, returning results")
     return jsonify(results), 200
 
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
+@app.after_request
+def add_csp_header(response):
+    response.headers['Content-Security-Policy'] = "default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data:; worker-src blob:;"
+    return response
+
+@app.route('/pdf/<filename>')
+def serve_pdf(filename):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    app.logger.info(f"Attempting to serve PDF: {file_path}")
+    if os.path.exists(file_path):
+        app.logger.info(f"File found, serving: {file_path}")
+        file_size = os.path.getsize(file_path)
+        app.logger.info(f"File size: {file_size} bytes")
+        return send_file(file_path, mimetype='application/pdf')
+    else:
+        app.logger.error(f"File not found: {file_path}")
+        return "PDF not found", 404
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
+
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    port = int(os.environ.get('PORT', 8080))
+    print(f"Starting Flask server on port {port}")
+    app.run(debug=True, port=port)

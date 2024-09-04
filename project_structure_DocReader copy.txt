@@ -1,0 +1,36 @@
+├── DocReader/
+  ├── README.md
+  ├── format_structure_DocReader.py
+  ├── package-lock.json
+  ├── package.json
+  ├── start-backend.js
+  ├── start.js
+  ├── DocReader_env/
+  ├── MiscDocs/
+  ├── backend/
+    ├── app.py
+    ├── requirements.txt
+    ├── uploads/
+  ├── frontend/
+    ├── README.md
+    ├── components.json (GOOD)
+    ├── jsconfig.json
+    ├── package-lock.json
+    ├── package.json
+    ├── tailwind.config.js (GOOD)
+    ├── public/
+      ├── index.html 
+      ├── manifest.json
+    ├── src/
+      ├── App.css
+      ├── App.js
+      ├── App.test.js
+      ├── index.css
+      ├── index.js
+      ├── reportWebVitals.js
+      ├── setupTests.js
+      ├── componentsß/
+        ├── ui/
+          ├── multi-step-loader.js
+      ├── lib/
+        ├── utils.js

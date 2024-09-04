@@ -2,3 +2,5 @@ pdf_chat_env/
 backend/uploads/
 .env
 node_modules
+# .gitignore
+/src
