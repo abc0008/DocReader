@@ -2,9 +2,18 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 console.log('Starting backend process...');
-const backendProcess = spawn('node', ['start-backend.js'], {
+const backendPath = path.join(__dirname, 'backend');
+const backendProcess = spawn('python3', ['app.py'], {
+  cwd: backendPath,
   stdio: 'inherit',
-  env: { ...process.env, PORT: '8080' }
+  env: { 
+    ...process.env, 
+    FLASK_APP: 'app.py', 
+    FLASK_ENV: 'development',
+    FLASK_DEBUG: 'True',
+    PYTHONUNBUFFERED: '1',
+    PORT: '8080'
+  }
 });
 
 backendProcess.on('error', (err) => {
@@ -22,6 +31,10 @@ const frontendProcess = spawn('npm', ['start'], {
   cwd: frontendPath,
   stdio: 'inherit',
   env: { ...process.env, PORT: '8000' }
+});
+
+frontendProcess.on('error', (err) => {
+  console.error('Failed to start frontend process:', err);
 });
 
 // Handle process termination

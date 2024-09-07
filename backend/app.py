@@ -56,22 +56,88 @@ def extract_key_fields(text):
                 "type": "object",
                 "properties": {
                     "company_name": {"type": "string"},
-                    "revenue": {"type": "number"},
-                    "net_income": {"type": "number"},
-                    "total_assets": {"type": "number"},
-                    "accounts_receivable": {"type": "number"},
-                    "inventory": {"type": "number"},
-                    "prepaid_expenses": {"type": "number"},
-                    "accounts_payable": {"type": "number"},
-                    "short_term_debt": {"type": "number"},
-                    "accrued_expenses": {"type": "number"},
-                    "long_term_debt": {"type": "number"},
-                    "common_stock": {"type": "number"},
-                    "retained_earnings": {"type": "number"}
+                    "assets": {
+                        "type": "object",
+                        "properties": {
+                            "current_assets": {
+                                "type": "object",
+                                "properties": {
+                                    "cash_and_cash_equivalents": {"type": "number"},
+                                    "accounts_receivable": {"type": "number"},
+                                    "prepaid_expenses": {"type": "number"},
+                                    "total_current_assets": {"type": "number"}
+                                }
+                            },
+                            "non_current_assets": {
+                                "type": "object",
+                                "properties": {
+                                    "property_plant_and_equipment": {"type": "number"},
+                                    "accumulated_depreciation": {"type": "number"},
+                                    "total_property_plant_and_equipment": {"type": "number"},
+                                    "investments": {"type": "number"},
+                                    "total_non_current_assets": {"type": "number"}
+                                }
+                            },
+                            "total_assets": {"type": "number"}
+                        }
+                    },
+                    "liabilities_and_equity": {
+                        "type": "object",
+                        "properties": {
+                            "current_liabilities": {
+                                "type": "object",
+                                "properties": {
+                                    "accounts_payable": {"type": "number"},
+                                    "short_term_debt": {"type": "number"},
+                                    "accrued_expenses": {"type": "number"},
+                                    "total_current_liabilities": {"type": "number"}
+                                }
+                            },
+                            "non_current_liabilities": {
+                                "type": "object",
+                                "properties": {
+                                    "long_term_debt": {"type": "number"},
+                                    "total_non_current_liabilities": {"type": "number"}
+                                }
+                            },
+                            "total_liabilities": {"type": "number"},
+                            "equity": {
+                                "type": "object",
+                                "properties": {
+                                    "common_stock": {"type": "number"},
+                                    "retained_earnings": {"type": "number"},
+                                    "total_equity": {"type": "number"}
+                                }
+                            },
+                            "total_liabilities_and_equity": {"type": "number"}
+                        }
+                    },
+                    "income_statement": {
+                        "type": "object",
+                        "properties": {
+                            "revenue": {
+                                "type": "object",
+                                "properties": {
+                                    "sales_revenue": {"type": "number"},
+                                    "rental_income": {"type": "number"},
+                                    "total_revenue": {"type": "number"}
+                                }
+                            },
+                            "expenses": {
+                                "type": "object",
+                                "properties": {
+                                    "cost_of_goods_sold": {"type": "number"},
+                                    "operating_expenses": {"type": "number"},
+                                    "depreciation": {"type": "number"},
+                                    "interest_expense": {"type": "number"},
+                                    "total_expenses": {"type": "number"}
+                                }
+                            },
+                            "net_income": {"type": "number"}
+                        }
+                    }
                 },
-                "required": ["company_name", "revenue", "net_income", "total_assets", "accounts_receivable", 
-                             "inventory", "prepaid_expenses", "accounts_payable", "short_term_debt", 
-                             "accrued_expenses", "long_term_debt", "common_stock", "retained_earnings"]
+                "required": ["company_name", "assets", "liabilities_and_equity", "income_statement"]
             }
         }
     ]
@@ -104,18 +170,56 @@ def extract_key_fields(text):
         else:
             return {
                 "company_name": "Unknown",
-                "revenue": 0.0,
-                "net_income": 0.0,
-                "total_assets": 0.0,
-                "accounts_receivable": 0.0,
-                "inventory": 0.0,
-                "prepaid_expenses": 0.0,
-                "accounts_payable": 0.0,
-                "short_term_debt": 0.0,
-                "accrued_expenses": 0.0,
-                "long_term_debt": 0.0,
-                "common_stock": 0.0,
-                "retained_earnings": 0.0
+                "assets": {
+                    "current_assets": {
+                        "cash_and_cash_equivalents": 0.0,
+                        "accounts_receivable": 0.0,
+                        "prepaid_expenses": 0.0,
+                        "total_current_assets": 0.0
+                    },
+                    "non_current_assets": {
+                        "property_plant_and_equipment": 0.0,
+                        "accumulated_depreciation": 0.0,
+                        "total_property_plant_and_equipment": 0.0,
+                        "investments": 0.0,
+                        "total_non_current_assets": 0.0
+                    },
+                    "total_assets": 0.0
+                },
+                "liabilities_and_equity": {
+                    "current_liabilities": {
+                        "accounts_payable": 0.0,
+                        "short_term_debt": 0.0,
+                        "accrued_expenses": 0.0,
+                        "total_current_liabilities": 0.0
+                    },
+                    "non_current_liabilities": {
+                        "long_term_debt": 0.0,
+                        "total_non_current_liabilities": 0.0
+                    },
+                    "total_liabilities": 0.0,
+                    "equity": {
+                        "common_stock": 0.0,
+                        "retained_earnings": 0.0,
+                        "total_equity": 0.0
+                    },
+                    "total_liabilities_and_equity": 0.0
+                },
+                "income_statement": {
+                    "revenue": {
+                        "sales_revenue": 0.0,
+                        "rental_income": 0.0,
+                        "total_revenue": 0.0
+                    },
+                    "expenses": {
+                        "cost_of_goods_sold": 0.0,
+                        "operating_expenses": 0.0,
+                        "depreciation": 0.0,
+                        "interest_expense": 0.0,
+                        "total_expenses": 0.0
+                    },
+                    "net_income": 0.0
+                }
             }
     except Exception as e:
         print(f"Error calling Anthropic API: {str(e)}")
@@ -182,17 +286,18 @@ def upload_files():
             # Extract entities using Claude API
             entities = extract_key_fields(extracted_text)
             
-            results.append({
+            result = {
                 'filename': filename,
                 'extracted_text': extracted_text,
                 'entities': entities,
                 'pdfUrl': f'/uploads/{filename}'
-            })
+            }
+            results.append(result)
         else:
             app.logger.error(f"File type not allowed: {file.filename}")
             return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
     
-    app.logger.info(f"Upload successful, returning results")
+    app.logger.info(f"Upload successful, returning results: {results}")  # Log the results
     return jsonify(results), 200
 
 @app.after_request
