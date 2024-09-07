@@ -257,6 +257,7 @@ def serve_uploaded_pdf(filename):
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
+    global results  # Move this line to the beginning of the function
     app.logger.info("Received upload request")
     app.logger.debug(f"Request files: {request.files}")
     app.logger.debug(f"Request form: {request.form}")
@@ -271,7 +272,7 @@ def upload_files():
         app.logger.error("No selected files")
         return jsonify({'error': 'No selected files'}), 400
     
-    results = []  # Initialize an empty list to store results
+    results = []  # Initialize the results list
     
     for file in files:
         if file and allowed_file(file.filename):
@@ -292,14 +293,14 @@ def upload_files():
                 'entities': entities,
                 'pdfUrl': f'/uploads/{filename}'
             }
-            results.append(result)  # Store the result in the list
-            app.logger.debug(f"Results list: {results}")
+            results.append(result)  # Store the result in the global list
+            print(results)  # Add this line to print the results list
         else:
             app.logger.error(f"File type not allowed: {file.filename}")
             return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
     
     app.logger.info(f"upload_files is returning: {type(results)}")
-    return results  # Return the results list directly
+    return jsonify(results), 200  # Return the results list directly
 
 @app.after_request
 def after_request(response):
@@ -332,7 +333,11 @@ def serve_static(filename):
 
 @app.route('/api/extracted_data', methods=['GET'])
 def get_extracted_data():
-    return jsonify(upload_files())  # Pass the results list from upload_files
+    # This should return the previously extracted data
+    # You might need to store this data somewhere (e.g., in-memory, database)
+    if not results:  # Assuming 'results' is a global variable storing extracted data
+        return jsonify([]), 200
+    return jsonify(results), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
