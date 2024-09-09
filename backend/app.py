@@ -51,7 +51,15 @@ def extract_key_fields(text):
     tools = [
         {
             "name": "extract_financial_entities",
-            "description": "Extracts financial entities from the text.",
+            "description": """
+            Extracts financial entities from text.
+            Entity names may not exactly match the schema - use best judgment for mapping.
+            IMPORTANT: Documents may have varying layouts and tables with multiple date columns.
+            Always extract data from the MOST RECENT date column available.
+            If multiple tables exist for the same type of financial statement, use the most recent one.
+            Adjust values based on scale modifiers (e.g., 'In Millions', 'In Thousands').
+            Use 0.0 as default for missing values.
+            """,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -144,17 +152,19 @@ def extract_key_fields(text):
 
     query = f"""
     <document>
+    <content>   
     {text}
+    </content>
     </document>
 
-    Use the extract_financial_entities tool to extract financial entities from the text. 
-    If you can't find a specific value, use 0.0 as the default.
+    Use the extract_financial_entities tool to extract financial entities from the text.
     """
 
     try:
         response = client.messages.create(
             model=MODEL_NAME,
-            max_tokens=4096,
+            max_tokens=8192,
+            system="You are an expert financial analyst specializing in spreading financials for credit underwriting and loan originations. Your task is to accurately extract and interpret financial data from various document formats.",
             tools=tools,
             messages=[{"role": "user", "content": query}]
         )
