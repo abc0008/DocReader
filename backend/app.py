@@ -33,7 +33,7 @@ CORS(app)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'pdf'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
+app.config['MAX_CONTENT_LENGTH'] = 128 * 1024 * 1024  # 128 MB limit
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -267,7 +267,7 @@ def serve_uploaded_pdf(filename):
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
-    global results  # Move this line to the beginning of the function
+    global results
     app.logger.info("Received upload request")
     app.logger.debug(f"Request files: {request.files}")
     app.logger.debug(f"Request form: {request.form}")
@@ -282,7 +282,7 @@ def upload_files():
         app.logger.error("No selected files")
         return jsonify({'error': 'No selected files'}), 400
     
-    results = []  # Initialize the results list
+    results = []
     
     for file in files:
         if file and allowed_file(file.filename):
@@ -299,18 +299,17 @@ def upload_files():
             
             result = {
                 'filename': filename,
-                'extracted_text': extracted_text,
                 'entities': entities,
                 'pdfUrl': f'/uploads/{filename}'
             }
-            results.append(result)  # Store the result in the global list
-            print(results)  # Add this line to print the results list
+            results.append(result)
+            print(results)
         else:
             app.logger.error(f"File type not allowed: {file.filename}")
             return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
     
     app.logger.info(f"upload_files is returning: {type(results)}")
-    return jsonify(results), 200  # Return the results list directly
+    return jsonify(results), 200
 
 @app.after_request
 def after_request(response):
